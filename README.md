@@ -127,6 +127,14 @@ python main.py --help
 
 ---
 
+## Testing
+
+Run tests with pytest
+
+```bash
+pytest tests/ -v
+```
+
 ## Strategies
 
 ### Action Strategies
