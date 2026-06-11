@@ -1,5 +1,6 @@
 from simulator.game_state import GameState, Action
 from strategies.base import Strategy
+from strategies.basic_strategy import BasicStrategy
 
 
 class SemiRandomStrategy(Strategy):
@@ -64,3 +65,103 @@ class DealerMirrorStrategy(Strategy):
 
     def name(self) -> str:
         return "dealer_mirror"
+        
+
+class CardCountingStrategy(Strategy):
+    """
+    Basic Strategy with index play deviations based on true count.
+    Implements the most impactful count-based strategy adjustments
+    known as the 'Illustrious 18' — the 18 deviations that account
+    for 80% of the gain from learning index plays.
+
+    Uses BasicStrategy as the foundation and overrides specific
+    decisions when the true count crosses key thresholds.
+
+    Only meaningful when paired with a counting system (e.g. HiLo)
+    and card_counting_allowed=True in config. Without a counting
+    system, true_count=0 always and this behaves identically to
+    BasicStrategy.
+    """
+
+    def __init__(self) -> None:
+        self._basic = BasicStrategy()
+
+    def decide(self, state: GameState) -> Action:
+        tc = state.true_count
+        pv = state.player_value
+        du = state.dealer_upcard
+        soft = state.player_is_soft
+
+        # --- Index plays (Illustrious 18) ---
+        # Each deviation is: (condition) -> override action
+        # Only applied when the action is actually legal
+
+        # Insurance — take at TC +3 or higher
+        # (handled externally as a side bet — skip for now)
+
+        # 16 vs 10: stand at TC 0 or higher (normally hit)
+        if pv == 16 and du == 10 and not soft:
+            if tc >= 0:
+                return "stand"
+
+        # 15 vs 10: stand at TC +4 or higher (normally hit)
+        if pv == 15 and du == 10 and not soft:
+            if tc >= 4:
+                return "stand"
+
+        # 12 vs 3: stand at TC +2 or higher (normally hit)
+        if pv == 12 and du == 3 and not soft:
+            if tc >= 2:
+                return "stand"
+
+        # 12 vs 2: stand at TC +3 or higher (normally hit)
+        if pv == 12 and du == 2 and not soft:
+            if tc >= 3:
+                return "stand"
+
+        # 11 vs Ace: double at TC +1 or higher (normally hit)
+        if pv == 11 and du == 11 and not soft:
+            if tc >= 1 and state.can_double:
+                return "double"
+
+        # 10 vs 10: double at TC +4 or higher (normally hit)
+        if pv == 10 and du == 10 and not soft:
+            if tc >= 4 and state.can_double:
+                return "double"
+
+        # 10 vs Ace: double at TC +3 or higher (normally hit)
+        if pv == 10 and du == 11 and not soft:
+            if tc >= 3 and state.can_double:
+                return "double"
+
+        # 9 vs 2: double at TC +1 or higher (normally hit)
+        if pv == 9 and du == 2 and not soft:
+            if tc >= 1 and state.can_double:
+                return "double"
+
+        # 9 vs 7: double at TC +3 or higher (normally hit)
+        if pv == 9 and du == 7 and not soft:
+            if tc >= 3 and state.can_double:
+                return "double"
+
+        # 16 vs 9: stand at TC +5 or higher (normally hit)
+        if pv == 16 and du == 9 and not soft:
+            if tc >= 5:
+                return "stand"
+
+        # 13 vs 2: stand at TC -1 or higher (basic already stands,
+        # but at very negative counts should hit — deviation is to hit)
+        if pv == 13 and du == 2 and not soft:
+            if tc <= -1:
+                return "hit"
+
+        # 13 vs 3: stand at TC -2 or higher
+        if pv == 13 and du == 3 and not soft:
+            if tc <= -2:
+                return "hit"
+
+        # Fall back to basic strategy for everything else
+        return self._basic.decide(state)
+
+    def name(self) -> str:
+        return "counting_strategy"
