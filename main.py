@@ -16,7 +16,7 @@ from simulator.config import (
 from simulator.counting import HiLoCount, KOCount, OmegaIICount, NoCount
 from strategies.random_strategy import RandomStrategy, RandomBetting
 from strategies.basic_strategy import BasicStrategy
-from strategies.rule_based_strategies import SemiRandomStrategy, DealerMirrorStrategy
+from strategies.rule_based_strategies import SemiRandomStrategy, DealerMirrorStrategy, CardCountingStrategy
 from strategies.betting_strategies import (
     FlatBetting,
     MartingaleBetting,
@@ -42,6 +42,7 @@ STRATEGIES: dict[str, Type[Strategy]] = {
     "basic":    BasicStrategy,
     "semi_random":   SemiRandomStrategy,
     "dealer_mirror": DealerMirrorStrategy,
+    "counting":      CardCountingStrategy,
 }
 
 BETTING: dict[str, Type[BettingStrategy]] = {
