@@ -1,6 +1,9 @@
 # Generated data — too large to commit
 data/runs/
 
+#report charts
+report_charts
+
 # Python
 __pycache__/
 *.pyc
