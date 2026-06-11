@@ -72,6 +72,12 @@ blackjack-sim/
     betting_strategies.py       ← Flat, Martingale, Anti-Martingale, Count-Based
   experiments/
     experiment_runner.py    ← Runs multiple experiments, saves CSV + metadata
+  tests/
+    conftest.py              ← Path setup for pytest
+    test_hand.py             ← Hand value, soft/hard, bust, blackjack, split
+    test_counting.py         ← Hi-Lo, KO, Omega II counting systems
+    test_game_state.py       ← Immutability and legal actions
+    test_basic_strategy.py   ← Hard hands, soft hands, pairs, fallbacks
   analysis/
     strategy_comparison.ipynb   ← Hand-level strategy analysis (4M hands)
     session_analysis.ipynb      ← Session-level bankroll and counting analysis (70M hands)
@@ -79,6 +85,7 @@ blackjack-sim/
     runs/                   ← Generated data (gitignored — regenerate below)
   main.py                   ← CLI entry point
   generate_report.py        ← Generates PDF analysis report from run data
+  pytest.ini                ← pytest configuration (testpaths, verbosity)
   blackjack_analysis_report.pdf  ← Pre-generated report (see Key Findings)
   ARCHITECTURE.md           ← Detailed architecture and design decisions
 ```
