@@ -88,7 +88,7 @@ class BasicStrategy(Strategy):
 
         # Priority 1: pairs
         if state.can_split:
-            pair_value = value // 2
+            pair_value = 11 if state.player_is_soft else value // 2
             action_str = _PAIRS.get(pair_value, {}).get(dealer, "H")
             action = _ACTION_MAP[action_str]
             if action == "split":

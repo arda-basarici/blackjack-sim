@@ -215,3 +215,26 @@ CLI (main.py)
 - --compare flag runs full matrix in one command
 - sys.path.insert ensures imports work from any directory
 - RawDescriptionHelpFormatter preserves example formatting in --help
+
+## Known Bugs
+
+### `Hand.is_soft()` — double-ace misclassification (fixed)
+
+`is_soft()` contained a logic error where the `flipped` variable was
+algebraically cancelled out, making the check equivalent to `aces > 0`
+before the while loop adjustment. This misclassified A+A as hard 12
+instead of soft 12.
+
+### `BasicStrategy.decide()` — A+A pair lookup wrong key (fixed)
+
+`pair_value = value // 2` derived the pair card value from the hand total.
+For A+A, `value() == 12`, so `pair_value = 6` — looking up pair-of-6s
+instead of pair-of-aces (key 11) in `_PAIRS`. Against dealer 7-11, this
+returned hit instead of split.
+
+Both bugs were caught by the unit test suite added in the same session.
+Fix: `is_soft()` now returns `aces > 0` after the while loop. Pair lookup
+now uses `11 if state.player_is_soft else value // 2`.
+
+Simulation data not re-run — impact is narrow (multi-ace hands, A+A vs
+dealer 7-11). Must fix and re-run before Phase 3 training data generation.

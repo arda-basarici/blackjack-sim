@@ -43,9 +43,7 @@ class Hand:
             total -= 10
             aces -= 1
 
-        # If we still have an ace that wasn't flipped, hand is soft
-        flipped = sum(1 for card in self.cards if card.is_ace()) - aces
-        return (aces - flipped) > 0 if aces > 0 else False
+        return aces > 0
 
     def is_bust(self) -> bool:
         return self.value() > 21
