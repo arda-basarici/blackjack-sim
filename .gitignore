@@ -1,0 +1,14 @@
+# Generated data — too large to commit
+data/runs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
