@@ -43,10 +43,13 @@ class ExperimentRunner:
         runner.run(mode="sessions", num_hands=100, num_sessions=1000)
     """
 
-    def __init__(self, output_dir: str = "data/runs") -> None:
+    def __init__(self, output_dir: str = "data/runs", run_id: str | None = None) -> None:
         self._output_dir = output_dir
         self._experiments: list[ExperimentConfig] = []
-        self._run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # A stable, caller-supplied run_id makes runs reproducible and lets the
+        # notebooks reference them by a fixed name; otherwise fall back to a
+        # timestamp so ad-hoc runs never collide.
+        self._run_id = run_id or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     def add_experiment(self, experiment: ExperimentConfig) -> None:
         self._experiments.append(experiment)

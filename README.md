@@ -83,7 +83,8 @@ blackjack-sim/
     session_analysis.ipynb      ← Session-level bankroll and counting analysis (70M hands)
   data/
     runs/                   ← Generated data (gitignored — regenerate below)
-  main.py                   ← CLI entry point
+  main.py                   ← CLI entry point (single run; supports --run-id)
+  regenerate_data.py        ← One command to regenerate all analysis runs (stable names)
   generate_report.py        ← Generates PDF analysis report from run data
   pytest.ini                ← pytest configuration (testpaths, verbosity)
   blackjack_analysis_report.pdf  ← Pre-generated report (see Key Findings)
@@ -127,6 +128,13 @@ python main.py --mode sessions --strategy basic --betting martingale --config ve
 
 # With card counting
 python main.py --mode hands --strategy counting --betting count --counting hilo --config single --hands 100000
+
+# Save to a stable, named run directory (instead of a timestamp)
+python main.py --mode hands --strategy basic --hands 1000000 --run-id hands_basic
+
+# Regenerate every run the notebooks use, in one command
+python regenerate_data.py            # full scale
+python regenerate_data.py --quick    # small scale for a fast check
 
 # See all options
 python main.py --help
@@ -217,45 +225,41 @@ All comparisons use net profit in dollars, not ROI.
 
 ## Casino Configurations
 
-| Config    | Decks | BJ Payout | Dealer Soft 17 | Notes                        |
-| --------- | ----- | --------- | -------------- | ---------------------------- |
-| `vegas`   | 6     | 3:2       | Hits           | Standard Las Vegas Strip     |
-| `single`  | 1     | 3:2       | Stands         | Best conditions for counting |
-| `liberal` | 2     | 3:2       | Stands         | Most player-friendly         |
-| `tough`   | 6     | 6:5       | Hits           | Worst player conditions      |
+| Config    | Decks | BJ Payout | Dealer Soft 17 | Notes                                       |
+| --------- | ----- | --------- | -------------- | ------------------------------------------- |
+| `vegas`   | 6     | 3:2       | Stands         | Default 6-deck S17 — matches the BS chart   |
+| `single`  | 1     | 3:2       | Stands         | Best for counting; deals to 50% penetration |
+| `liberal` | 2     | 3:2       | Stands         | Most player-friendly                        |
+| `tough`   | 6     | 6:5       | Hits           | Worst player conditions (H17)               |
 
 ---
 
 ## Regenerating Analysis Data
 
-The `data/runs/` folder is gitignored. To regenerate:
-
-### Hand Analysis (strategy_comparison.ipynb)
-
-```bash
-python main.py --mode hands --strategy basic --config vegas --hands 1000000 --seed 42
-python main.py --mode hands --strategy semi_random --config vegas --hands 1000000 --seed 42
-python main.py --mode hands --strategy dealer_mirror --config vegas --hands 1000000 --seed 42
-python main.py --mode hands --strategy random --config vegas --hands 1000000 --seed 42
-```
-
-### Session Analysis (session_analysis.ipynb)
+The `data/runs/` folder is gitignored. Regenerate every run the notebooks use
+with one command:
 
 ```bash
-python main.py --mode sessions --strategy basic --betting flat --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy basic --betting martingale --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy basic --betting anti --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy basic --betting count --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy basic --betting count --counting hilo --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy basic --betting count --counting hilo --config single --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy random --betting flat --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy counting --betting count --counting hilo --config vegas --hands 1000 --sessions 10000 --seed 42
-python main.py --mode sessions --strategy counting --betting count --counting hilo --config single --hands 1000 --sessions 10000 --seed 42
+python regenerate_data.py            # full scale (matches the notebooks)
+python regenerate_data.py --quick    # small scale for a fast sanity check
 ```
 
-After regenerating session runs, update the run IDs in `session_analysis.ipynb`
-Cell 2. A known improvement — storing the counting system name in `run_metadata.json`
-for automatic detection — is tracked in `ARCHITECTURE.md`.
+This writes all 13 runs to `data/runs/<name>/` under stable, self-describing
+names — `hands_basic`, `hands_random`, `hands_semi_random`, `hands_dealer_mirror`
+for the hand analysis, and `sess_basic_flat`, `sess_basic_count_hilo_6d`,
+`sess_counting_hilo_1d`, … for the session analysis. The notebooks reference
+those names directly, so regenerating never invalidates them (no timestamp run
+IDs to chase). Seed is fixed at 42; full scale is ~90M+ simulated hands.
+
+The card-counting runs hold 6-deck and single-deck at the **same penetration
+(0.5)** so the 6d-vs-1d comparison isolates deck count alone; non-counting runs
+keep the realistic 0.75 (penetration is immaterial without a counter).
+
+To generate a single ad-hoc run under a stable name instead of a timestamp:
+
+```bash
+python main.py --mode hands --strategy basic --hands 1000000 --run-id hands_basic
+```
 
 ---
 
@@ -263,10 +267,10 @@ for automatic detection — is tracked in `ARCHITECTURE.md`.
 
 **Simulator:**
 
-- Store counting system name in `run_metadata.json` — enables automatic run detection
-- Full pair splitting with split counter (currently simplified)
 - Insurance bet support
 - Multi-hand play (multiple players at the table)
+- Record the counting system in `run_metadata.json` (runs are currently
+  distinguished by stable run name instead)
 
 **Strategies:**
 

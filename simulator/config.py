@@ -17,8 +17,10 @@ class SimulatorConfig:
     penetration: float = 0.75
 
     # --- Dealer rules ---
-    # True = dealer hits soft 17 (worse for player), False = dealer stands
-    dealer_hits_soft_17: bool = True
+    # True = dealer hits soft 17 (worse for player), False = dealer stands.
+    # Default is S17 (stand): this is the ruleset BasicStrategy's chart targets,
+    # so the simulator's default config and its "optimal" reference agree.
+    dealer_hits_soft_17: bool = False
     # True = dealer checks for blackjack before player acts
     dealer_peeks: bool = True
 
@@ -46,15 +48,26 @@ class SimulatorConfig:
 # --- Preset configurations ---
 
 def vegas_strip() -> SimulatorConfig:
-    """Standard Las Vegas Strip rules — 6 decks, dealer hits soft 17, 3:2 blackjack."""
+    """Standard 6-deck rules — dealer STANDS on soft 17 (S17), 3:2 blackjack, DAS.
+    This is the ruleset BasicStrategy's chart is tuned for, so it is the
+    recommended config for generating decision data with a correct optimal
+    reference. (tough_rules deliberately uses H17 and so deviates slightly.)"""
     return SimulatorConfig()
 
 
 def single_deck() -> SimulatorConfig:
-    """Single deck rules — better for card counting."""
+    """Single deck rules — the strong card-counting case.
+
+    Deals to 50% penetration before reshuffling (NOT every round): the count
+    must be allowed to build up across hands for counting to mean anything.
+    Shuffling every round would reset the count each hand and make counting
+    pointless. 50% on one deck guarantees >=27 cards at every hand start, so a
+    hand can never exhaust the deck mid-play.
+    """
     return SimulatorConfig(
         num_decks=1,
-        shuffle_every_round=True,
+        shuffle_every_round=False,
+        penetration=0.5,
         blackjack_payout=1.5,
         dealer_hits_soft_17=False,
     )

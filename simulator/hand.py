@@ -13,6 +13,8 @@ class Hand:
     cards: list[Card] = field(default_factory=list)
     is_split_hand: bool = False      # True if this hand resulted from a split
     is_doubled: bool = False         # True if player doubled down
+    from_split_aces: bool = False    # True if this hand came from splitting aces
+                                     # (gets exactly one card — no hit/resplit)
 
     def add_card(self, card: Card) -> None:
         self.cards.append(card)

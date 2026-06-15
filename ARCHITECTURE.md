@@ -236,5 +236,58 @@ Both bugs were caught by the unit test suite added in the same session.
 Fix: `is_soft()` now returns `aces > 0` after the while loop. Pair lookup
 now uses `11 if state.player_is_soft else value // 2`.
 
-Simulation data not re-run — impact is narrow (multi-ace hands, A+A vs
-dealer 7-11). Must fix and re-run before Phase 3 training data generation.
+### Phase 2→3 boundary audit (all fixed, with regression tests)
+
+A full correctness pass before generating Phase 3 training data surfaced several
+issues. Data was regenerated after the fixes (see "Regenerating Analysis Data"
+in the README).
+
+- **Split hands scored only the first hand.** `play_hand()` resolved only
+  `final_hands[0]`: the second split hand's win/loss never reached the bankroll,
+  every decision record in the hand was stamped with the first hand's outcome,
+  and a *busted* split hand was dropped entirely (a silent loss leak). Fixed by
+  resolving each played-out hand independently, summing payouts for the bankroll
+  delta, and stamping each sub-hand's records with its own outcome — the `split`
+  decision itself carries the net of both (Option A). `SubResult`/`sub_results`
+  was added to expose per-sub-hand detail.
+
+- **Split aces could be hit and resplit.** Real rule: a split ace gets exactly
+  one card. Basic strategy was hitting/doubling them — worth ~0.28% of phantom
+  player edge, large enough that the house-edge self-check only landed in band
+  once fixed. Split aces now take one card and cannot resplit (`Hand.from_split_aces`).
+
+- **`max_splits` did nothing.** `_can_split()` always returned `True`. Now
+  enforced via a per-hand split counter.
+
+- **No-peek mutual blackjack mispaid.** With `dealer_peeks=False`, a player
+  blackjack paid 3:2 without checking the dealer; a mutual blackjack must push.
+  Fixed (the default `dealer_peeks=True` was unaffected).
+
+- **Strategy chart / rules mismatch.** The basic-strategy chart was the S17
+  chart while the default config was H17. Resolved by making S17 the default (so
+  the chart and the "optimal" reference agree), correcting the S17 surrender
+  cells, and adding the soft-double "Ds" fallback (soft 18+ stands when it
+  cannot double, instead of hitting).
+
+- **Single-deck shuffled every round.** `single_deck` reshuffled after every
+  hand, so the count reset each hand and counting measured only index plays — the
+  count-based bet never ramped (bet-above-min fired 0% of the time). Now deals to
+  50% penetration so the count builds across hands.
+
+- **Omega II counted the ace as −2.** Canonical Omega II counts the ace as 0
+  (tracked separately). Fixed. (Hi-Lo and KO were already correct.)
+
+### Recorded data: legal-action flags
+
+`DecisionRecord` now also stores `can_double` / `can_split` / `can_surrender` at
+each decision, so the action space is fully reconstructable from `decisions.csv`
+for the Phase 3 model.
+
+### Known simplifications (intentional, not bugs)
+
+- Surrender resolves the whole dealt hand immediately; it is only legal on the
+  opening two cards (and `surrender_allowed` defaults off), so it cannot co-occur
+  with a split in practice. Left as-is.
+- The dealer still plays out even when the player has already busted. Outcomes are
+  unaffected (a bust loses regardless), but it draws extra cards that slightly
+  perturb the running count in counting runs.

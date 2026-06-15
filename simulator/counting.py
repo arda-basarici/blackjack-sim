@@ -97,9 +97,11 @@ class OmegaIICount(CountingSystem):
     Multi-level system: cards have values of -2, -1, 0, +1, +2.
     """
 
+    # Note: in Omega II the ace is counted as 0 (tracked separately as a
+    # side count), not with the tens. card.value()==11 is the ace.
     _VALUES: dict[int, int] = {
         2: 1, 3: 1, 4: 2, 5: 2, 6: 2,
-        7: 1, 8: 0, 9: -1, 10: -2, 11: -2
+        7: 1, 8: 0, 9: -1, 10: -2, 11: 0
     }
 
     def __init__(self) -> None:

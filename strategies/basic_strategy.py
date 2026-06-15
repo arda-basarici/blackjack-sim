@@ -20,8 +20,8 @@ _HARD: dict[int, dict[int, str]] = {
     12: {2:"H",3:"H",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",11:"H"},
     13: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",11:"H"},
     14: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",11:"H"},
-    15: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",11:"R"},
-    16: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"R",10:"R",11:"R"},
+    15: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"R",11:"H"},
+    16: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"R",10:"R",11:"H"},
     17: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",11:"S"},
     18: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",11:"S"},
     19: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",11:"S"},
@@ -102,7 +102,14 @@ class BasicStrategy(Strategy):
             soft_key = max(2, min(soft_key, 9))
             action_str = _SOFT.get(soft_key, {}).get(dealer, "H")
             action = _ACTION_MAP[action_str]
-            return self._resolve(action, state)
+            # Soft doubles are "Ds": when doubling isn't available (multi-card
+            # soft hand), soft 18+ falls back to STAND, lower soft totals to HIT.
+            # (Hard doubles always fall back to hit — handled by _resolve.)
+            if action == "double" and not state.can_double:
+                return "stand" if value >= 18 else "hit"
+            if action == "surrender" and not state.can_surrender:
+                return "hit"
+            return action
 
         # Priority 3: hard hands
         hard_key = max(4, min(value, 21))

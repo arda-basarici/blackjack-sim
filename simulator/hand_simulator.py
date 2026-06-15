@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from simulator.card import Deck
 from simulator.hand import Hand
 from simulator.config import SimulatorConfig
@@ -23,6 +23,12 @@ class DecisionRecord:
     dealer_upcard: int
     action: Action
 
+    # Legal actions available at this decision (the action space — lets the
+    # RL agent reconstruct what was choosable, not just what was chosen).
+    can_double: bool
+    can_split: bool
+    can_surrender: bool
+
     # Hand context
     decision_index: int          # 0 = first decision, 1 = second, etc.
     card_count_in_hand: int      # how many cards player had when deciding
@@ -32,7 +38,9 @@ class DecisionRecord:
     true_count: float
     decks_remaining: float
 
-    # Outcome — same for all decisions in a hand
+    # Outcome of the sub-hand this decision belongs to.
+    # For a split, each sub-hand's records carry that sub-hand's own outcome;
+    # the "split" decision itself carries the net result of all hands it spawned.
     final_player_value: int
     final_dealer_value: int
     outcome: str                 # "win", "lose", "push", "blackjack", "bust"
@@ -45,10 +53,26 @@ class DecisionRecord:
 
 
 @dataclass
+class SubResult:
+    """
+    Resolution of a single played-out hand. A normal hand has one;
+    a split has one per resulting sub-hand. Bankroll = sum of payouts.
+    """
+    outcome: str
+    payout: float
+    final_player_value: int
+
+
+@dataclass
 class HandResult:
     """
-    Summary of a completed hand.
-    Returned by HandSimulator.play_hand() to SessionSimulator.
+    Summary of a completed hand (one dealt hand, which may become several
+    sub-hands via splitting).
+
+    `payout` is the TOTAL across all sub-hands — the bankroll delta.
+    `outcome` summarises the dealt hand: for a single hand it is that hand's
+    outcome; for a split it is the net (win/lose/push by sign of total payout).
+    Per-sub-hand detail lives in `sub_results`.
     """
     hand_id: str
     outcome: str
@@ -57,6 +81,7 @@ class HandResult:
     final_player_value: int
     final_dealer_value: int
     decision_records: list[DecisionRecord]
+    sub_results: list[SubResult] = field(default_factory=list)
 
 
 class HandSimulator:
@@ -124,29 +149,49 @@ class HandSimulator:
 
         # --- Check for player blackjack ---
         if player_hand.is_blackjack():
+            # With peek ON, a dealer blackjack was already resolved above, so
+            # reaching here means the dealer has none. With peek OFF we never
+            # looked — a mutual blackjack must PUSH, not pay 3:2.
+            if not self._config.dealer_peeks and dealer_hand.is_blackjack():
+                return self._resolve_hand(
+                    hand_id, session_id, player_hand, dealer_hand,
+                    dealer_upcard, [], bankroll, bet_size, "push"
+                )
             return self._resolve_hand(
                 hand_id, session_id, player_hand, dealer_hand,
                 dealer_upcard, [], bankroll, bet_size, "blackjack"
             )
 
         # --- Player decision loop ---
-        decision_records: list[DecisionRecord] = []
+        # Decisions are grouped per played-out hand so that, after a split,
+        # each sub-hand's records are stamped with *that* sub-hand's outcome.
+        # The "split" decision itself belongs to neither resulting hand; it is
+        # collected separately and stamped with the net of both (Option A).
+        decision_records: list[DecisionRecord] = []   # flat, in play order
         decision_index = 0
-        player_hands = [player_hand]  # list to handle splits
-        final_hands: list[Hand] = []
+        split_count = 0                               # splits performed this hand
+        player_hands = [player_hand]                  # queue; grows on split
+        terminal_hands: list[tuple[Hand, list[DecisionRecord]]] = []
+        split_records: list[DecisionRecord] = []
 
         while player_hands:
             current_hand = player_hands.pop(0)
+            hand_records: list[DecisionRecord] = []
 
             while True:
+                # Split aces get exactly one card — no hit, double, or resplit.
+                if current_hand.from_split_aces:
+                    action = "stand"
+                    break
+
                 state = self._build_state(
                     current_hand, dealer_upcard,
-                    bankroll, bet_size, hands_played
+                    bankroll, bet_size, hands_played, split_count
                 )
                 action = self._strategy.decide(state)
 
                 # Record this decision
-                decision_records.append(DecisionRecord(
+                record = DecisionRecord(
                     hand_id=hand_id,
                     session_id=session_id,
                     strategy=self._strategy.name(),
@@ -155,6 +200,9 @@ class HandSimulator:
                     player_is_soft=state.player_is_soft,
                     dealer_upcard=dealer_upcard,
                     action=action,
+                    can_double=state.can_double,
+                    can_split=state.can_split,
+                    can_surrender=state.can_surrender,
                     decision_index=decision_index,
                     card_count_in_hand=current_hand.card_count(),
                     running_count=state.running_count,
@@ -167,7 +215,9 @@ class HandSimulator:
                     payout=0.0,             # filled after hand resolves
                     bankroll_before=bankroll,
                     bet_size=bet_size,
-                ))
+                )
+                decision_records.append(record)
+                hand_records.append(record)
                 decision_index += 1
 
                 # --- Execute action ---
@@ -185,10 +235,16 @@ class HandSimulator:
                     break
 
                 elif action == "split":
-                    # Create two new hands from the pair
+                    # This decision is resolved against the net of both hands
+                    # it spawns, not either one — pull it out of this hand's
+                    # records and into the shared split bucket.
+                    hand_records.remove(record)
+                    split_records.append(record)
+                    split_count += 1
                     card1, card2 = current_hand.cards
-                    new_hand1 = Hand(is_split_hand=True)
-                    new_hand2 = Hand(is_split_hand=True)
+                    aces = card1.is_ace()        # splitting aces is special
+                    new_hand1 = Hand(is_split_hand=True, from_split_aces=aces)
+                    new_hand2 = Hand(is_split_hand=True, from_split_aces=aces)
                     new_hand1.add_card(card1)
                     new_hand1.add_card(self._deck.deal())
                     new_hand2.add_card(card2)
@@ -198,13 +254,20 @@ class HandSimulator:
                     break
 
                 elif action == "surrender":
+                    # NOTE: surrender resolves the whole dealt hand immediately.
+                    # It is only legal on the opening two cards, so it cannot
+                    # co-occur with a split in practice (surrender_allowed
+                    # defaults off). Left as-is; not part of the split fix.
                     return self._resolve_hand(
                         hand_id, session_id, current_hand, dealer_hand,
                         dealer_upcard, decision_records, bankroll, bet_size, "surrender"
                     )
 
-            if not current_hand.is_bust() and action != "split":
-                final_hands.append(current_hand)
+            # A split spawns new hands and is not itself terminal. Every other
+            # exit — stand, double, or a bust — is a played-out hand to resolve,
+            # busts included (previously dropped, silently leaking the loss).
+            if action != "split":
+                terminal_hands.append((current_hand, hand_records))
 
         # --- Dealer plays out ---
         while True:
@@ -220,17 +283,63 @@ class HandSimulator:
                 break
             dealer_hand.add_card(self._deck.deal())
 
-        # --- Determine outcome for each final hand ---
-        # Use first final hand for primary outcome recording
-        if not final_hands:
-            outcome = "bust"
-        else:
-            outcome = self._determine_outcome(final_hands[0], dealer_hand)
+        # --- Resolve every played-out hand independently ---
+        # Each sub-hand is scored against the dealer on its own; payouts sum to
+        # the bankroll delta; each sub-hand's records carry its own outcome.
+        final_dealer = dealer_hand.value()
+        sub_results: list[SubResult] = []
+        total_payout = 0.0
 
-        return self._resolve_hand(
-            hand_id, session_id, final_hands[0] if final_hands else player_hand,
-            dealer_hand, dealer_upcard, decision_records,
-            bankroll, bet_size, outcome
+        for hand, records in terminal_hands:
+            outcome = self._determine_outcome(hand, dealer_hand)
+            payout = self._calculate_payout(outcome, bet_size, hand.is_doubled)
+            is_win = 1 if outcome in ("win", "blackjack") else 0
+            final_player = hand.value()
+
+            for record in records:
+                record.final_player_value = final_player
+                record.final_dealer_value = final_dealer
+                record.outcome = outcome
+                record.is_win = is_win
+                record.payout = payout
+
+            sub_results.append(SubResult(outcome, payout, final_player))
+            total_payout += payout
+
+        total_payout = round(total_payout, 2)
+
+        # Summary outcome for the dealt hand. A single hand reports its own
+        # outcome; a split collapses to the net by sign of total payout (A).
+        if split_records:
+            net_outcome = (
+                "win" if total_payout > 0
+                else "lose" if total_payout < 0
+                else "push"
+            )
+            net_is_win = 1 if net_outcome == "win" else 0
+            for record in split_records:
+                # The split decision spawned several hands, so it has no single
+                # resolved value; the meaningful label is the net outcome/payout.
+                record.final_player_value = 0
+                record.final_dealer_value = final_dealer
+                record.outcome = net_outcome
+                record.is_win = net_is_win
+                record.payout = total_payout
+            summary_outcome = net_outcome
+            summary_is_win = net_is_win
+        else:
+            summary_outcome = sub_results[0].outcome if sub_results else "bust"
+            summary_is_win = 1 if summary_outcome in ("win", "blackjack") else 0
+
+        return HandResult(
+            hand_id=hand_id,
+            outcome=summary_outcome,
+            is_win=summary_is_win,
+            payout=total_payout,
+            final_player_value=sub_results[0].final_player_value if sub_results else 0,
+            final_dealer_value=final_dealer,
+            decision_records=decision_records,
+            sub_results=sub_results,
         )
 
     def _build_state(
@@ -240,6 +349,7 @@ class HandSimulator:
         bankroll: float,
         bet_size: float,
         hands_played: int,
+        splits_done: int = 0,
     ) -> GameState:
         """Build GameState from current hand state."""
         decks_remaining = self._deck.cards_remaining() / 52
@@ -252,7 +362,7 @@ class HandSimulator:
             can_hit=True,
             can_stand=True,
             can_double=self._can_double(hand),
-            can_split=self._can_split(hand),
+            can_split=self._can_split(hand, splits_done),
             can_surrender=self._config.surrender_allowed and hand.card_count() == 2,
             running_count=self._deck.running_count if self._config.card_counting_allowed else 0,
             true_count=self._deck.true_count if self._config.card_counting_allowed else 0.0,
@@ -278,12 +388,15 @@ class HandSimulator:
             return 10 <= value <= 11
         return False
 
-    def _can_split(self, hand: Hand) -> bool:
-        """Check if splitting is allowed based on config and hand state."""
+    def _can_split(self, hand: Hand, splits_done: int = 0) -> bool:
+        """Splitting is allowed only on a pair, under the max-splits cap, and
+        never on a split-ace hand (aces are split once and get one card each)."""
         if not hand.can_split():
             return False
-        # Count existing splits by checking is_split_hand
-        # Simple approach — config.max_splits tracked externally if needed
+        if hand.from_split_aces:
+            return False
+        if splits_done >= self._config.max_splits:
+            return False
         return True
 
     def _determine_outcome(self, player_hand: Hand, dealer_hand: Hand) -> str:
@@ -345,6 +458,9 @@ class HandSimulator:
                 player_is_soft=player_hand.is_soft(),
                 dealer_upcard=dealer_upcard,
                 action="none",          # no decision made
+                can_double=False,
+                can_split=False,
+                can_surrender=False,
                 decision_index=0,
                 card_count_in_hand=player_hand.card_count(),
                 running_count=self._deck.running_count if self._config.card_counting_allowed else 0,
@@ -374,4 +490,5 @@ class HandSimulator:
             final_player_value=final_player,
             final_dealer_value=final_dealer,
             decision_records=decision_records,
+            sub_results=[SubResult(outcome, payout, final_player)],
         )

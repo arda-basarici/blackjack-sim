@@ -70,9 +70,10 @@ class DealerMirrorStrategy(Strategy):
 class CardCountingStrategy(Strategy):
     """
     Basic Strategy with index play deviations based on true count.
-    Implements the most impactful count-based strategy adjustments
-    known as the 'Illustrious 18' — the 18 deviations that account
-    for 80% of the gain from learning index plays.
+    Implements a subset (~12) of the most impactful count-based
+    adjustments — drawn from the 'Illustrious 18', the deviations
+    that account for most of the gain from learning index plays.
+    (Insurance and a few of the 18, e.g. 12 vs 4/5/6, are not yet included.)
 
     Uses BasicStrategy as the foundation and overrides specific
     decisions when the true count crosses key thresholds.

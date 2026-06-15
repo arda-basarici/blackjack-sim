@@ -157,6 +157,13 @@ Examples:
         help="Output directory for results (default: data/runs)"
     )
 
+    parser.add_argument(
+        "--run-id",
+        type=str,
+        default=None,
+        help="Stable run directory name (default: timestamped run_YYYYMMDD_HHMMSS)"
+    )
+
     return parser
 
 
@@ -169,7 +176,7 @@ def run_single(args: argparse.Namespace) -> str:
 
     experiment_name = f"{args.strategy}_{args.betting}_{args.config}"
 
-    runner = ExperimentRunner(output_dir=args.output)
+    runner = ExperimentRunner(output_dir=args.output, run_id=args.run_id)
     runner.add_experiment(ExperimentConfig(
         name=experiment_name,
         config=config,
@@ -190,7 +197,7 @@ def run_single(args: argparse.Namespace) -> str:
 def run_comparison(args: argparse.Namespace) -> str:
     """Run all strategy combinations for comparison."""
     config = CONFIGS[args.config]
-    runner = ExperimentRunner(output_dir=args.output)
+    runner = ExperimentRunner(output_dir=args.output, run_id=args.run_id)
 
     # Standard comparison matrix
     combinations = [
