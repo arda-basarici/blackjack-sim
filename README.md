@@ -80,7 +80,7 @@ blackjack-sim/
     test_basic_strategy.py   ← Hard hands, soft hands, pairs, fallbacks
   analysis/
     strategy_comparison.ipynb   ← Hand-level strategy analysis (4M hands)
-    session_analysis.ipynb      ← Session-level bankroll and counting analysis (70M hands)
+    session_analysis.ipynb      ← Session-level bankroll, betting & counting analysis
   data/
     runs/                   ← Generated data (gitignored — regenerate below)
   main.py                   ← CLI entry point (single run; supports --run-id)
@@ -156,19 +156,19 @@ pytest tests/ -v
 
 | Strategy          | Description                                                          | House Edge (1M hands) |
 | ----------------- | -------------------------------------------------------------------- | --------------------- |
-| **Basic**         | Mathematically optimal — lookup table from combinatorial analysis    | 0.76%                 |
+| **Basic**         | Mathematically optimal — lookup table from combinatorial analysis    | 0.45%                 |
 | **Counting**      | Basic strategy + index plays adjusted by true count (Illustrious 18) | Context-dependent     |
-| **Semi-Random**   | Stand on hard 17+, hit if bust impossible, random otherwise          | 6.03%                 |
-| **Dealer Mirror** | Copies dealer rules exactly — never doubles or splits                | 6.04%                 |
-| **Random**        | Random legal action — pure baseline                                  | 42.36%                |
+| **Semi-Random**   | Stand on hard 17+, hit if bust impossible, random otherwise          | 5.59%                 |
+| **Dealer Mirror** | Copies dealer rules exactly — never doubles or splits                | 5.63%                 |
+| **Random**        | Random legal action — pure baseline                                  | 45.76%                |
 
 ### Betting Strategies
 
-| Strategy            | Description                             | Avg Net / 1000 hands | Bust Rate |
+| Strategy            | Description                             | Avg Net / 1000 hands | Ruin Rate |
 | ------------------- | --------------------------------------- | -------------------- | --------- |
-| **Flat**            | Fixed bet every hand — baseline         | -$69                 | 0.6%      |
-| **Martingale**      | Double after loss, reset after win      | -$91                 | 40.9%     |
-| **Anti-Martingale** | Double after win, reset after loss      | -$108                | 36.7%     |
+| **Flat**            | Fixed bet every hand — baseline         | -$45                 | 1.0%      |
+| **Martingale**      | Double after loss, reset after win      | -$48                 | 40.1%     |
+| **Anti-Martingale** | Double after win, reset after loss      | -$76                 | 36.6%     |
 | **Count-Based**     | Scale bet with true count (1-8x spread) | Varies               | Varies    |
 
 _Session results: 10,000 sessions × 1,000 hands, $1,000 starting bankroll,
@@ -180,14 +180,14 @@ $10 base bet, Vegas Strip rules, seed 42._
 
 ### Hand Analysis (strategy_comparison.ipynb)
 
-**Basic strategy reduces house edge from 42.4% to 0.76%** — a 41.6 percentage
+**Basic strategy reduces house edge from 45.8% to 0.45%** — about a 45 percentage
 point improvement over random play. This comes from specific, identifiable
 decision points: doubling on 9-11 vs weak dealer, standing on 12-16 vs dealer
 2-6, and splitting pairs correctly.
 
 **The most counterintuitive finding:** Semi-Random has the lowest bust rate
-(12.3%) of all four strategies — lower even than Basic (15.9%) — yet its house
-edge is 8x worse. Randomly standing on 12-16 avoids busts but trades them for
+(12.4%) of all four strategies — lower even than Basic (15.8%) — yet its house
+edge is 12x worse. Randomly standing on 12-16 avoids busts but trades them for
 standing losses. Basic strategy accepts calculated bust risk because the
 alternative is worse. Avoiding busts is not the goal. Maximizing expected
 value is.
@@ -195,9 +195,9 @@ value is.
 ### Session Analysis (session_analysis.ipynb)
 
 **Betting systems do not change expected value — they change variance.**
-Martingale produces a 40.9% bust rate vs flat betting's 0.6%, with a worse
-average net profit. The casino's mathematical edge is unchanged regardless
-of bet sizing pattern.
+Martingale goes broke (ruin) in 40.1% of sessions vs flat betting's 1.0%, with
+no better average net. The casino's mathematical edge is unchanged regardless
+of bet-sizing pattern.
 
 **Bet variation without information is worthless.** Count-based betting with
 no counting system produces identical results to flat betting. The information
@@ -205,21 +205,28 @@ is the edge — not the betting pattern.
 
 **Card counting works — but conditions matter enormously:**
 
-| Configuration                                              | Avg Net / 1000 hands |
-| ---------------------------------------------------------- | -------------------- |
-| Basic + Flat (baseline)                                    | -$69                 |
-| Basic + Count Betting + HiLo (6 deck)                      | -$21                 |
-| Counting Strategy + Count Betting + HiLo (6 deck)          | -$8                  |
-| Basic + Count Betting + HiLo (single deck)                 | -$7                  |
-| **Counting Strategy + Count Betting + HiLo (single deck)** | **+$34**             |
+| Configuration                                              | Avg Net / 1000 hands | Ruin Rate |
+| ---------------------------------------------------------- | -------------------- | --------- |
+| Basic + Flat (baseline)                                    | -$45                 | 1.0%      |
+| Basic + Count Betting + HiLo (6 deck)                      | -$12                 | 6.6%      |
+| Counting Strategy + Count Betting + HiLo (6 deck)          | -$5                  | 6.5%      |
+| Basic + Count Betting + HiLo (single deck)                 | +$216                | 22.1%     |
+| **Counting Strategy + Count Betting + HiLo (single deck)** | **+$314**            | **20.4%** |
 
-Single deck with full index plays is the only configuration that produces
-a genuine player edge. Modern casinos use 6-8 decks specifically to reduce
-counting effectiveness.
+Single deck with full index plays is the only configuration that produces a
+genuine player edge (~+1.3% per dollar wagered). Modern casinos use 6-8 decks
+specifically to reduce counting effectiveness.
 
-**ROI percentages are misleading when bet sizes vary.** A flat bettor wagers
-$10,000 over 1,000 hands. A count-based bettor may wager $15,000-$20,000.
-All comparisons use net profit in dollars, not ROI.
+**But that edge is not safe.** The single-deck counter pairs the best expected
+value with the highest ruin risk of any positive strategy — roughly one session
+in five goes broke (20.4%). The aggressive 1-to-8 bet spread that creates the
+edge is the same thing that drives the variance. Expected value and risk of ruin
+are independent levers: profit is not survival.
+
+**Net profit in dollars is the comparison metric, not raw return.** Counting
+strategies wager 2-2.4x more than a flat bettor (raising bets at favorable
+counts), so a return-on-bankroll figure flatters them; edge per dollar wagered
+is the honest, comparable number.
 
 ---
 
@@ -249,7 +256,7 @@ names — `hands_basic`, `hands_random`, `hands_semi_random`, `hands_dealer_mirr
 for the hand analysis, and `sess_basic_flat`, `sess_basic_count_hilo_6d`,
 `sess_counting_hilo_1d`, … for the session analysis. The notebooks reference
 those names directly, so regenerating never invalidates them (no timestamp run
-IDs to chase). Seed is fixed at 42; full scale is ~90M+ simulated hands.
+IDs to chase). Seed is fixed at 42; full scale is ~80M simulated hands.
 
 The card-counting runs hold 6-deck and single-deck at the **same penetration
 (0.5)** so the 6d-vs-1d comparison isolates deck count alone; non-counting runs
