@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blackjack-sim"
+version = "0.1.0"
+description = "From-scratch Monte Carlo blackjack simulator and optimal-strategy analysis (Phase 2)."
+requires-python = ">=3.13"
+
+# Packaging metadata only — no engine logic touched. Exposes the engine packages so other
+# projects (e.g. phase 3's blackjack-rl) can import them via `pip install -e`.
+[tool.setuptools]
+packages = ["simulator", "strategies", "experiments"]
