@@ -468,9 +468,9 @@ def build_pdf(chart_paths, M):
              Paragraph(f"{M['total_hands']/1e6:.0f} million simulated hands &bull; 4 playing "
                        "strategies &bull; 9 betting systems", meta),
              Spacer(1, 2*mm),
-             Paragraph("Part of AI Journey &mdash; Phase 2: Data &amp; ML Engineering", meta),
+             Paragraph("Part of AI Journey &mdash; Data &amp; ML Engineering", meta),
              Spacer(1, 14*mm),
-             Paragraph("github.com/arda-basarici/ai-journey",
+             Paragraph("github.com/arda-basarici/blackjack-sim",
                        ParagraphStyle("L", fontSize=10.5, textColor=HexColor("#64B5F6"),
                                       alignment=TA_CENTER, fontName="Helvetica"))]
     story.append(panel(cover, height=120*mm))
@@ -756,8 +756,8 @@ def build_pdf(chart_paths, M):
     ]:
         P(f"<b>{q}</b>", bullet)
         P(a, ParagraphStyle("ib2", parent=body, leftIndent=14, spaceAfter=8))
-    P("Phase 3: Learning the Strategy From Data", h2)
-    P("The millions of recorded decisions are the training set for the next phase: a neural network "
+    P("Next: Learning the Strategy From Data", h2)
+    P("The millions of recorded decisions are the training set for the sequel project: a neural network "
       "learns to play from the data alone, never told the rules. Does it rediscover Basic Strategy? "
       "Does it find the counting deviations on its own? Because strategies are pluggable, the trained "
       "model drops straight into this same framework and is judged on the very metrics in this report "
@@ -794,7 +794,7 @@ def build_pdf(chart_paths, M):
                          "real, complete, and publicly documented.",
                          ParagraphStyle("CB", fontSize=10, textColor=HexColor("#BBDEFB"),
                                         alignment=TA_CENTER, fontName="Helvetica", spaceAfter=14, leading=16)),
-               Paragraph("github.com/arda-basarici/ai-journey",
+               Paragraph("arda-basarici.github.io",
                          ParagraphStyle("CL", fontSize=11, textColor=HexColor("#64B5F6"),
                                         alignment=TA_CENTER, fontName="Helvetica-Bold"))]
     story.append(panel(closing, height=200))
