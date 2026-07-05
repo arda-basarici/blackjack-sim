@@ -15,3 +15,6 @@ __pycache__/
 
 # VS Code
 .vscode/
+# Packaging metadata (inherited from the monorepo root .gitignore at the repo split)
+*.egg-info/
+.pytest_cache/
