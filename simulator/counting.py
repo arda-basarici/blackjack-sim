@@ -1,3 +1,11 @@
+"""Pluggable card-counting systems, decoupled from the deck.
+
+``CountingSystem`` defines the contract; Hi-Lo, KO, and Omega II implement the canonical
+schemes, and ``NoCount`` is the null object — a safe default that keeps the no-counting
+path free of if/None checks. New systems plug in without touching ``Deck``, which only
+*feeds* observations here.
+"""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

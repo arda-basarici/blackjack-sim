@@ -1,3 +1,12 @@
+"""Casino rules as data — settings only, no logic.
+
+``SimulatorConfig`` carries every rule the engine consults (decks, penetration, payout,
+dealer soft-17 behaviour, double/split/surrender permissions), so a controlled experiment
+changes one field and measures the effect — never a code path. The presets are real
+rule-sets (``vegas_strip``, ``single_deck``, ``liberal_rules``, ``tough_rules``); defaults
+match the Vegas Strip S17 game the basic-strategy chart is derived for.
+"""
+
 from dataclasses import dataclass, field
 from typing import Literal
 

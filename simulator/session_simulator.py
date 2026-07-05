@@ -1,3 +1,12 @@
+"""A full playing session: the shoe persists, the bankroll is real, ruin is possible.
+
+Drives ``HandSimulator`` hand by hand with a persistent deck (so counts build across
+hands), asks the ``BettingStrategy`` for a wager before each deal — clamped three ways:
+config minimum, config maximum, remaining bankroll — and stops at the configured hand
+count or at ruin. Emits one ``SessionRecord`` per session beside the per-decision records;
+stateful betting systems are notified via optional ``update()``/``reset()`` hooks.
+"""
+
 import uuid
 from dataclasses import dataclass
 from simulator.card import Deck

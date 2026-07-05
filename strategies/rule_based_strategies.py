@@ -1,3 +1,11 @@
+"""The naive heuristics and the counting player — the comparison ladder's middle rungs.
+
+``SemiRandomStrategy`` (stand on 17+, never stand when busting is impossible, random
+otherwise) exists to expose the bust-rate fallacy; ``DealerMirrorStrategy`` plays the
+dealer's own rules — no doubles, no splits; ``CardCountingStrategy`` is basic strategy
+plus the Illustrious-18 index deviations keyed on the true count.
+"""
+
 from simulator.game_state import GameState, Action
 from strategies.base import Strategy
 from strategies.basic_strategy import BasicStrategy

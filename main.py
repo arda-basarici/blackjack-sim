@@ -1,3 +1,12 @@
+"""CLI entry point — registries wire the pluggable parts together.
+
+``CONFIGS`` / ``STRATEGIES`` / ``BETTING`` / ``COUNTING`` map names to constructors, so
+adding an option anywhere in the engine is one registry line here and nothing else.
+``--compare`` runs a full strategy matrix in one command; ``--run-id`` saves under a
+stable name instead of a timestamp. Betting and counting flags matter in sessions mode
+(hands mode has no bankroll).
+"""
+
 import argparse
 import sys
 import os

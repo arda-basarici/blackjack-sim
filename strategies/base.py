@@ -1,3 +1,12 @@
+"""The two contracts every player implements — the seam the whole engine hangs on.
+
+``Strategy.decide(state) → Action`` and ``BettingStrategy.bet(state, bankroll) → wager``
+are the only interfaces the simulators know; anything answering them plugs in — a rule
+set, a counting scheme, or a trained model. Stateful bettors may additionally offer
+``update(outcome)``/``reset()``, which the session simulator feature-detects. ``name()``
+defaults to the class name and labels the recorded data.
+"""
+
 from abc import ABC, abstractmethod
 from simulator.game_state import GameState, Action
 

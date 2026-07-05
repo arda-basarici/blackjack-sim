@@ -1,3 +1,12 @@
+"""Cards and the deck: dealing, shuffling, and count observation.
+
+``Deck`` deals from a configurable number of standard 52-card packs and reshuffles at a
+penetration threshold. Every dealt card is *observed* by the pluggable counting system
+(``counting.py``) — the deck never consults the count, it only reports it. ``true_count``
+lives here rather than on the counting system because normalising by decks remaining
+requires the deck's own size.
+"""
+
 from dataclasses import dataclass
 from enum import Enum
 import random

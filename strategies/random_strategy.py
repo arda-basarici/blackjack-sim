@@ -1,3 +1,10 @@
+"""The random floor: uniformly random play and betting, the baseline under every claim.
+
+``RandomStrategy`` draws only from ``state.legal_actions()`` (never hardcodes action
+names); ``RandomBetting`` bets a random fraction of bankroll. Each carries its own seeded
+``random.Random`` instance so streams are reproducible and independent of the deck's RNG.
+"""
+
 import random
 from simulator.game_state import GameState, Action
 from strategies.base import Strategy, BettingStrategy

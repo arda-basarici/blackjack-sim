@@ -1,3 +1,11 @@
+"""Mathematically optimal play as lookup tables — the study's reference strategy.
+
+Three tables (hard, soft, pairs) in published strategy-card notation (H/S/D/P/R), for the
+S17 chart that matches the default rules; decision priority is pairs → soft → hard, and
+unavailable actions fall back cleanly (double→hit, surrender→hit, soft-double→stand where
+the chart says Ds). Its measured 0.45% house edge is the engine's validation anchor.
+"""
+
 from simulator.game_state import GameState, Action
 from strategies.base import Strategy
 

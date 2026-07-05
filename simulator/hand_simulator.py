@@ -1,3 +1,13 @@
+"""One hand end-to-end: drive the strategy decision by decision, record everything.
+
+``play_hand()`` deals, consults the ``Strategy`` at each decision through a ``GameState``
+snapshot, plays out splits (each sub-hand resolved *independently* — its own outcome on
+its own records, the split decision carrying the net), settles against the dealer, and
+emits one ``DecisionRecord`` per decision with full context plus the legal-action flags —
+the row format the datasets are built from. Outcome fields are written in exactly one
+place, after the hand completes.
+"""
+
 from dataclasses import dataclass, field
 from simulator.card import Deck
 from simulator.hand import Hand

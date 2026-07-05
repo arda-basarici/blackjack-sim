@@ -1,3 +1,12 @@
+"""Run named experiment batches and persist their data — the engine's effectful shell.
+
+``ExperimentRunner`` executes queued experiments (hand or session mode) and writes each
+run to ``data/runs/<run-id>/``: ``decisions.csv``, ``sessions.csv``, and
+``run_metadata.json``. Run ids are stable names when given (the regeneration contract the
+notebooks rely on) or timestamps ad hoc; the experiment name becomes ``config_id`` so
+analyses can filter by experiment.
+"""
+
 import os
 import json
 import uuid

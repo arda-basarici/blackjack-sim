@@ -1,3 +1,13 @@
+"""The strategy contract: an immutable snapshot of the game at one decision point.
+
+``GameState`` exposes exactly what a real player may see — hand value and softness, the
+dealer's *upcard* (never the hole card), the legal actions, and the count only when the
+rules allow counting (zeroed otherwise). It is frozen so a strategy can read but never
+touch simulator state: information honesty enforced by construction. ``legal_actions()``
+lets strategies iterate their options instead of re-deriving rule booleans; ``Action`` is
+a ``Literal`` type so invalid action strings fail at type-check time.
+"""
+
 from dataclasses import dataclass
 from typing import Literal
 

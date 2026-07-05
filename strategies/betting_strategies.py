@@ -1,3 +1,11 @@
+"""Betting systems for the session simulator — the variance levers.
+
+Flat is the baseline; Martingale and Anti-Martingale are the stateful progressions (with a
+cap against astronomical doubling); CountBased scales the wager with the *true* count. The
+study's finding, worth stating where the systems live: bet sizing changes variance and
+risk of ruin, never expected value — only count *information* moves the edge.
+"""
+
 from simulator.game_state import GameState
 from strategies.base import BettingStrategy
 

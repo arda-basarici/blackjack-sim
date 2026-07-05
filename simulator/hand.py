@@ -1,3 +1,11 @@
+"""Hand arithmetic: value, soft/hard, bust, blackjack, and split legality.
+
+Ace adjustment lives in ``value()`` (a ``Card`` always reports 11; the hand demotes aces
+to 1 as needed), ``is_blackjack()`` requires exactly two cards (a multi-hit 21 is not a
+blackjack), and split legality compares card *values* so ten-king can split. Split aces
+get exactly one card each (``from_split_aces``) — the real casino rule, enforced here.
+"""
+
 from dataclasses import dataclass, field
 from simulator.card import Card
 
