@@ -114,11 +114,9 @@ deck = Deck(num_decks=6, counting_system=HiLoCount())
 ## Quickstart
 
 ```bash
-cd phase2-data
 python -m venv .venv
 .venv\Scripts\activate          # Windows
-pip install -r requirements.txt
-cd blackjack-sim
+pip install -e .[dev,report]
 
 # Run basic strategy, 100k hands
 python main.py --mode hands --strategy basic --config vegas --hands 100000
