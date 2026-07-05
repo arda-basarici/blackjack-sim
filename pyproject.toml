@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "blackjack-sim"
 version = "0.1.0"
-description = "From-scratch Monte Carlo blackjack simulator and optimal-strategy analysis (Phase 2)."
+description = "From-scratch Monte Carlo blackjack simulator and optimal-strategy analysis."
 requires-python = ">=3.13"
 # The engine core (simulator/, strategies/) is stdlib-pure; pandas serves experiments/.
 dependencies = ["pandas"]
@@ -13,10 +13,12 @@ dependencies = ["pandas"]
 [project.optional-dependencies]
 # generate_report.py (PDF report script; not part of the packaged engine).
 report = ["numpy", "matplotlib", "seaborn", "reportlab"]
+# The notebooks in analysis/ (kernel + plotting; pandas is a core dependency).
+analysis = ["ipykernel", "numpy", "matplotlib", "seaborn"]
 dev = ["pytest"]
 
 # Exposes the engine packages so other projects (e.g. blackjack-rl) can depend on them —
-# via git URL (blackjack-sim @ git+https://github.com/arda-basarici/blackjack-sim) or a
-# sibling-checkout editable install (pip install -e ../blackjack-sim).
+# via git URL (blackjack-sim @ git+https://github.com/arda-basarici/blackjack-sim), or as an
+# editable install run from the consumer's own checkout (pip install -e ../blackjack-sim).
 [tool.setuptools]
 packages = ["simulator", "strategies", "experiments"]

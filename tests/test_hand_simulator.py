@@ -1,7 +1,8 @@
 """
 Split-resolution tests for HandSimulator.
 
-These pin down the bug fixed at the Phase 2->3 boundary: on a split, both
+These pin down a bug fixed in the pre-consumption correctness audit (see
+ARCHITECTURE.md — the audit run before blackjack-rl consumed the engine): on a split, both
 hands must be scored independently — each sub-hand's win/loss reaches the
 bankroll, and each sub-hand's decision records carry *that* hand's outcome
 (not the first hand's). Before the fix, only final_hands[0] was resolved and

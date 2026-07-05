@@ -68,13 +68,13 @@ def main():
 
     t0 = time.time()
 
-    # --- hands mode: per-strategy decision data (feeds eda / strategy_comparison) ---
+    # --- hands mode: per-strategy decision data (feeds strategy_comparison) ---
     _run("hands_basic",         "hands", strategy=BasicStrategy(),             num_hands=H)
     _run("hands_random",        "hands", strategy=RandomStrategy(seed=SEED),   num_hands=H)
     _run("hands_semi_random",   "hands", strategy=SemiRandomStrategy(seed=SEED), num_hands=H)
     _run("hands_dealer_mirror", "hands", strategy=DealerMirrorStrategy(),      num_hands=H)
 
-    # --- sessions mode: bankroll trajectories (feeds eda2 / session_analysis) ---
+    # --- sessions mode: bankroll trajectories (feeds session_analysis) ---
     _run("sess_basic_flat",          "sessions", strategy=BasicStrategy(), betting=FlatBetting(),
          num_hands=SH, num_sessions=SS)
     _run("sess_basic_martingale",    "sessions", strategy=BasicStrategy(), betting=MartingaleBetting(),
