@@ -1,0 +1,3 @@
+# Language stats (GitHub Linguist): the source is the Python packages;
+# notebooks are analysis documents.
+*.ipynb linguist-documentation
