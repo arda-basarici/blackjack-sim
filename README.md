@@ -105,3 +105,9 @@ python generate_report.py              # rebuild the PDF report from the run dat
 [DESIGN.md](DESIGN.md) — the decisions and why · [ARCHITECTURE.md](ARCHITECTURE.md) — the
 structure, and the correctness audit that earned the "validated" label ·
 [blackjack_analysis_report.pdf](blackjack_analysis_report.pdf) — the full analysis.
+
+## License
+
+Code is released under the [MIT License](LICENSE). The analysis report
+([blackjack_analysis_report.pdf](blackjack_analysis_report.pdf)) is © 2026 Arda Başarıcı,
+all rights reserved — included for reading, not licensed for reuse.
